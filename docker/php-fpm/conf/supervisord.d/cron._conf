@@ -1,0 +1,15 @@
+[program:cron]
+command=/usr/sbin/cron -f
+
+; プロセス名（numprocsが1以上の場合は%(process_num)sを使用して重複を避ける）
+process_name=%(program_name)s
+
+user = root
+autostart = true
+autorestart = true
+
+; この値より早く終了し場合に異常終了として扱う（超えて終了した場合は正常終了）
+startsecs = 0
+
+; リスタートの試行回数
+startretries=0
