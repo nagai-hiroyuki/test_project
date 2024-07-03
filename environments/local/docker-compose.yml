@@ -1,0 +1,110 @@
+version: "3.8"
+networks:
+  backend:
+    name: "${COMPOSE_PROJECT_NAME:-laravel}.${APP_ENV:-local}_network"
+services:
+  web:
+    container_name: "${COMPOSE_PROJECT_NAME:-laravel}.${APP_ENV:-local}.apache"
+    build:
+      context: "../../docker/apache"
+      target: "local"
+    image: "${COMPOSE_PROJECT_NAME:-laravel}/apache"
+    working_dir: /var/www
+    ports:
+      - "${WEB_PORT:-80}:80"
+    volumes:
+      - "../../src:/var/www:cached"
+    depends_on:
+      - "mysql"
+    networks:
+      - "backend"
+
+  mysql:
+    container_name: "${COMPOSE_PROJECT_NAME:-laravel}.${APP_ENV:-local}.mysql"
+    image: "mysql:8.0"
+    platform: linux/amd64
+    volumes:
+      - "db_data:/var/lib/mysql"
+    environment:
+      MYSQL_ROOT_PASSWORD: "mysql"
+      MYSQL_USER: "default"
+      MYSQL_PASSWORD: "secret"
+      MYSQL_DATABASE: "${COMPOSE_PROJECT_NAME:-laravel}_db"
+      TZ: "Asia/Tokyo"
+    ports:
+      - "3306:3306"
+    networks:
+      - "backend"
+
+  mailpit:
+    container_name: "${COMPOSE_PROJECT_NAME:-laravel}.${APP_ENV:-local}.mailpit"
+    image: "axllent/mailpit:latest"
+    ports:
+      - "${FORWARD_MAILPIT_PORT:-1025}:1025"
+      - "${FORWARD_MAILPIT_DASHBOARD_PORT:-8025}:8025"
+    networks:
+      - "backend"
+
+  minio:
+    container_name: "${COMPOSE_PROJECT_NAME}.${APP_ENV}.minio"
+    image: "minio/minio:RELEASE.2022-06-25T15-50-16Z.fips"
+    environment:
+      MINIO_ROOT_USER: "asdfghASDFGH"
+      MINIO_ROOT_PASSWORD: "asdfgh123456"
+    entrypoint: "bash"
+    command: '-c "/opt/bin/minio server /data --address :9000 --console-address :9001"'
+    volumes:
+      - "./s3/data:/data"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    networks:
+      - "backend"
+
+  redis:
+    image: "redis:6.2.6-alpine3.15"
+    container_name: "${COMPOSE_PROJECT_NAME}.${APP_ENV}.redis"
+    ports:
+      - "${FORWARD_REDIS_PORT:-6379}:6379"
+    volumes:
+      - "redis_volume:/data"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+    networks:
+      - "backend"
+
+  swagger-editor:
+    image: "swaggerapi/swagger-editor"
+    container_name: "${COMPOSE_PROJECT_NAME}.${APP_ENV}.swagger-editor"
+    ports:
+      - "8001:8080"
+    networks:
+      - "backend"
+
+  swagger-ui:
+    image: "swaggerapi/swagger-ui"
+    container_name: "${COMPOSE_PROJECT_NAME}.${APP_ENV}.swagger-ui"
+    ports:
+      - "8002:8080"
+    volumes:
+      - "../../api/flora:/flora"
+      - "./api/openapi.yaml:/openapi.yaml"
+    environment:
+      SWAGGER_JSON: "/flora/openapi.v1.yaml"
+    networks:
+      - "backend"
+
+  swagger-api:
+    image: "stoplight/prism:3"
+    container_name: "${COMPOSE_PROJECT_NAME}.${APP_ENV}.swagger-api"
+    ports:
+      - "8003:4010"
+    command: "mock -h 0.0.0.0 /openapi.yaml"
+    volumes:
+      - "./api/openapi.yaml:/openapi.yaml"
+    networks:
+      - "backend"
+volumes:
+  db_data:
+  redis_volume:
+    driver: "local"
