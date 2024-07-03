@@ -1,15 +1,15 @@
-[English](./README_en.md)
+[日本語](./README.md)
 
-# 開発環境構築方法
+# Starting up the Development Environment
 
-構成
+Middleware
 
 php 8.3  
 apache 2.4  
 mysql 8.0
 
-エンドユーザーの運用が社内のイントラネット内でWindowsサーバーで動作を前提としています。
-先方からの要望によりApacheを使用するため、開発環境もApacheを使用します。
+Operations for end users are performed on a Windows server within the company intranet.
+Since Apache is used at the client's request, the development environment also uses Apache.
 
 ----
 
@@ -22,16 +22,16 @@ $ docker compose up -d
 # If you are using m1/m2 Apple Silicon chip, please use this command
 $ docker compose -f docker-compose.m1.yml up -d
 ```
-docker pullで制限に引っかかって失敗するときはdockerにログインしてやって下さい。
+If you encounter issues with docker pull command, please login with docker
 
 
-### プロジェクトが作られていない場合、最初の開発者のみ実行してください
+### Execute this if there is no Laravel installed. Only the first developer should execute.
 ```bash
 # Only the first developer should run it. 
 $ docker compose exec web composer create-project --prefer-dist laravel/laravel . "10.*"
 ```
 
-### Laravelのインストール
+### Install Laravel
 
 ```bash
 # if installed
@@ -61,12 +61,12 @@ winpty docker compose exec web php artisan key:generate
 
 ### Permission
 ```bash
-# if there's error, なら実行する
+# if there's error, execute the following within docker container.
 $ chmod -R 777 ./storage/
 ```
 
-### .envを編集する
-(.env.example を参考にしてください)
+### Modify .env
+(Please check out from .env.example)
 ```dotenv
 DB_CONNECTION=mysql
 DB_HOST=mysql
@@ -91,19 +91,19 @@ $ docker compose exec web bash # Entering the Docker container
 /var/www# php artisan db:seed --class=DummyDatabaseSeeder # Run inside a container
 ```
 
-## フロント環境構築
-Node v20.11.0 をインストールしてください。  
-NVMでInstallする方法
+## Frontend Development
+Install Node v20.11.0  
+How to Install with NVM
 ```bash
 $ nvm install v20.11.0
 ```
 
-Nodeのバージョンを変更する
+Change the version of Node
 ```bash
 $ nvm use
 ```
 
-構築します。
+Build
 ```bash
 $ cd src
 $ npm install
@@ -112,7 +112,7 @@ $ npm run build # OR npm run dev
 
 ----
 
-### mailpit メールの受信
+### mailpit
 [http://localhost:8025](http://localhost:8025)
 
 
