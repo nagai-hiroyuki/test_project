@@ -1,0 +1,29 @@
+global
+    daemon
+    maxconn 256
+
+defaults
+    mode http
+    timeout connect 1000ms
+    timeout client 60000ms
+    timeout server 60000ms
+    option forwardfor
+
+resolvers dns
+    # Use Googles DNS Server
+    nameserver google 8.8.8.8:53
+    # Cache the nameserver resolutions for 300s
+    hold valid 300s
+
+frontend http-in
+    bind *:8888
+    redirect scheme https code 301
+
+frontend https-in
+    http-request set-header X-Forwarded-Proto https
+    bind *:8443 ssl crt /usr/local/etc/haproxy/tls/
+    default_backend nginx
+    stats hide-version
+
+backend nginx
+    server sh nginx:80 maxconn 32

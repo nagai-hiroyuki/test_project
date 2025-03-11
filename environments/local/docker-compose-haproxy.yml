@@ -1,0 +1,97 @@
+version: '3.8'
+networks:
+  backend:
+    name: re.${APP_ENV}.backend
+volumes:
+  app-data:
+services:
+  haproxy:
+    container_name: re.${APP_ENV}.haproxy
+    image: haproxy:2.0-alpine
+    ports:
+      - 80:8080
+      - 443:8443
+    #extra_hosts:
+    #  # linuxの場合、host.docker.internalが定義されていないので、
+    #  # .bashrcとかに以下のようにLOCAL_HOST_IPを定義しておくこと
+    #  #   export LOCAL_HOST_IP=`ip -4 a show <ethデバイス名> | grep -oP '(?<=inet\s)\d+(\.\d+){3}'`
+    #  - host.docker.internal:${LOCAL_HOST_IP}
+    depends_on:
+      - nginx
+    volumes:
+      - ./haproxy:/usr/local/etc/haproxy:ro
+    networks:
+      - backend
+  nginx:
+    container_name: re.${APP_ENV}.nginx
+    build:
+      context: ../../docker/nginx
+      target: local
+    image: re.${APP_ENV}/nginx
+    ports:
+      - 8080:80
+#      - 443:443
+    volumes:
+      - ../../src:/var/www:cached
+    depends_on:
+      - php-fpm
+    networks:
+      - backend
+  php-fpm:
+    container_name: re.${APP_ENV}.php-fpm
+    build:
+      context: ../../docker/php-fpm
+      target: local
+    image: re.${APP_ENV}/php-fpm
+    volumes:
+      - ../../src:/var/www:cached
+    environment:
+      TZ: "Asia/Tokyo"
+      LOG_CHANNEL: 'stack'
+    networks:
+      - backend
+  mysql:
+    container_name: re.${APP_ENV}.mysql
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_USER:     default
+      MYSQL_PASSWORD: secret
+      MYSQL_DATABASE: default
+      TZ: "Asia/Tokyo"
+    volumes:
+#      - ./mysql/data:/var/lib/mysql
+      - ./mysql/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    ports:
+      - "13306:3306"
+    networks:
+      - backend
+  mailhog:
+    container_name: re.${APP_ENV}.mailhog
+    image: mailhog/mailhog
+    ports:
+      - 1025:1025
+      - 8025:8025
+    networks:
+      - backend
+  redis:
+    container_name: re.${APP_ENV}.redis
+    image: redis:alpine
+    ports:
+      - 6379:6379
+    networks:
+      - backend
+  minio:
+    container_name: re.${APP_ENV}.minio
+    image: minio/minio:RELEASE.2021-06-07T21-40-51Z
+    ports:
+      - 9000:9000
+    volumes:
+      - ./s3:/data
+    environment:
+      MINIO_ACCESS_KEY: asdfghASDFGH
+      MINIO_SECRET_KEY: asdfgh123456
+    tty: true
+    command: [server, /data]
+    networks:
+      - backend
